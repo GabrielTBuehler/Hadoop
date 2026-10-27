@@ -1,0 +1,60 @@
+# Reference Hadoop cluster for the MapReduce demo (HDFS + YARN + JobHistory)
+# Based on the official apache/hadoop image layout.
+#
+#   docker compose up -d
+#   ..\run-demo.ps1            (auto-detects the "namenode" container)
+#
+# UIs: HDFS http://localhost:9870 | YARN http://localhost:8088 | JobHistory http://localhost:19888
+#
+# Only needed if your existing environment lacks YARN/NodeManager or a history server.
+# Otherwise keep your setup and just merge the settings from ./config.
+
+services:
+  namenode:
+    image: apache/hadoop:3.4.1
+    container_name: namenode
+    hostname: namenode
+    command: ["hdfs", "namenode"]
+    ports:
+      - "9870:9870"
+    env_file: ./config
+    environment:
+      ENSURE_NAMENODE_DIR: "/tmp/hadoop-root/dfs/name"
+
+  datanode:
+    image: apache/hadoop:3.4.1
+    container_name: datanode
+    hostname: datanode
+    command: ["hdfs", "datanode"]
+    env_file: ./config
+    depends_on: [namenode]
+
+  resourcemanager:
+    image: apache/hadoop:3.4.1
+    container_name: resourcemanager
+    hostname: resourcemanager
+    command: ["yarn", "resourcemanager"]
+    ports:
+      - "8088:8088"
+    env_file: ./config
+    depends_on: [namenode]
+
+  nodemanager:
+    image: apache/hadoop:3.4.1
+    container_name: nodemanager
+    hostname: nodemanager
+    command: ["yarn", "nodemanager"]
+    ports:
+      - "8042:8042"
+    env_file: ./config
+    depends_on: [resourcemanager]
+
+  historyserver:
+    image: apache/hadoop:3.4.1
+    container_name: historyserver
+    hostname: historyserver
+    command: ["mapred", "historyserver"]
+    ports:
+      - "19888:19888"
+    env_file: ./config
+    depends_on: [namenode, resourcemanager]
